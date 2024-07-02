@@ -1,22 +1,37 @@
-# Starter pipeline
-- task: SonarQubeAnalyze@6
-  inputs:
-    jdkversion: 'JAVA_HOME_17_X64'
-# Start with a minimal pipeline that you can customize to build and deploy your code.
-# Add steps that build, run tests, deploy, and more:
-# https://aka.ms/yaml
-
+# Trigger the pipeline on changes to the master branch
 trigger:
-- main
+- master
 
+# Define the pool to use for the pipeline
 pool:
-  vmImage: ubuntu-latest
+  name: SelfHostedPool
 
+# Steps to be executed in the pipeline
 steps:
-- script: echo Hello, world!
-  displayName: 'Run a one-line script'
+  # Step 1: Run Maven to build the project and run tests
+  - task: Maven@3
+    inputs:
+      mavenPomFile: 'pom.xml'
+      mavenOptions: '-Xmx3072m'
+      javaHomeOption: 'JDKVersion'
+      jdkVersionOption: '1.8'
+      jdkArchitectureOption: 'x64'
+      publishJUnitResults: true
+      testResultsFiles: '**/surefire-reports/TEST-*.xml'
+      goals: 'package'
 
-- script: |
-    echo Add other tasks to build, test, and deploy your project.
-    echo See https://aka.ms/yaml
-  displayName: 'Run a multi-line script'
+  # Step 2: Prepare SonarQube analysis
+  - task: SonarQubePrepare@6
+    inputs:
+      SonarQube: 'AzureSonarSC'
+      scannerMode: 'MSBuild'
+      projectKey: 'sqa_ac825daf361572f607f3c13a589c1060431ac76c'
+      mavenVersionOption: 'Default'
+      mavenAuthenticateFeed: false
+      effectivePomSkip: false
+
+  # (Optional) Step 3: Run SonarQube analysis (if needed)
+  # - task: SonarQubeAnalyze@5
+  #   inputs: {}
+
+  # (Optional) Step 4: Publish build artifacts, deploy, etc.
